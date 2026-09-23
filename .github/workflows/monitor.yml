@@ -37,10 +37,3 @@ jobs:
           EMAIL_ENABLED: 'true'
         run: |
           python check_signal.py
-
-      - name: Save signal state
-        if: always()
-        uses: actions/cache@v4
-        with:
-          path: .okb_last_signal.json
-          key: okb-signal-state-v1
