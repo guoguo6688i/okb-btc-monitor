@@ -133,15 +133,41 @@ def send_email(subject, body):
         return False
 
 
+def signal_tag(action):
+    """根据信号返回 (emoji, 醒目标签)。"""
+    if "买入" in action:
+        return "🟢", "【买入】"
+    if "卖出" in action:
+        return "🔴", "【卖出】"
+    if "减仓" in action:
+        return "🟠", "【减仓】"
+    if "观望偏多" in action:
+        return "🔵", "【观望偏多】"
+    return "🟡", "【持有观望】"
+
+
+def action_banner(action):
+    """邮件正文顶部的醒目行动提示，手机打开第一眼可见。"""
+    if "买入" in action:
+        return "▶ 买入信号：触发买点，可分批建仓"
+    if "卖出" in action:
+        return "■ 卖出信号：建议清仓，全部换回BTC"
+    if "减仓" in action:
+        return "▼ 减仓信号：建议减仓约50%，锁定部分BTC"
+    if "观望偏多" in action:
+        return "▲ 偏多信号：可轻仓试探"
+    return "● 持有观望：暂不操作"
+
+
 def build_signal_email(prev_action, prev_score, action, total, factors, okb_price, btc_price):
     """构建信号变化邮件内容。"""
-    is_buy = "买入" in action
-    emoji = "🟢" if is_buy else "🔴"
-    subject = f"{emoji} OKB/BTC信号变化: {prev_action}({prev_score:.1f}) → {action}({total:.1f})"
+    emoji, tag = signal_tag(action)
+    subject = f"{emoji}{tag} OKB/BTC信号变化 {prev_action}→{action}（{total:.1f}分）"
 
     lines = [
-        f"OKB/BTC 五因子信号变化提醒",
+        action_banner(action),
         f"{'='*40}",
+        f"OKB/BTC 五因子信号变化提醒",
         f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"",
         f"信号变化: {prev_action} ({prev_score:.1f}分) → {action} ({total:.1f}分)",
@@ -169,16 +195,8 @@ def build_signal_email(prev_action, prev_score, action, total, factors, okb_pric
 
 def build_daily_email(action, total, position, factors, okb_price, btc_price, prev_signal):
     """构建每日状态报告邮件。"""
-    is_buy = "买入" in action
-    is_sell = "卖出" in action or "减仓" in action
-    if is_buy:
-        emoji = "🟢"
-    elif is_sell:
-        emoji = "🔴"
-    else:
-        emoji = "🟡"
-
-    subject = f"{emoji} OKB/BTC每日报告: {action}({total:.1f}分)"
+    emoji, tag = signal_tag(action)
+    subject = f"{emoji}{tag} OKB/BTC每日报告 {action}（{total:.1f}分）"
 
     if prev_signal:
         prev_line = f"上次信号: {prev_signal.get('action','?')} ({prev_signal.get('score',0):.1f}分)"
@@ -186,8 +204,9 @@ def build_daily_email(action, total, position, factors, okb_price, btc_price, pr
         prev_line = "首次运行"
 
     lines = [
-        f"OKB/BTC 五因子每日状态报告",
+        action_banner(action),
         f"{'='*40}",
+        f"OKB/BTC 五因子每日状态报告",
         f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"{prev_line}",
         f"",
