@@ -476,8 +476,9 @@ def main():
                 )
                 send_email(subject, body)
 
-    # 每日状态报告（无论信号是否变化都发送）
-    daily_report = os.environ.get("DAILY_REPORT", "false").lower() == "true"
+    # 每日状态报告：在 UTC 4 点（北京时间12点）的运行中发送
+    from datetime import timezone as _tz
+    daily_report = datetime.now(_tz.utc).hour == 4
     if daily_report and EMAIL_CONFIG.get("enabled"):
         print("  正在发送每日状态报告邮件...")
         d_subject, d_body = build_daily_email(
