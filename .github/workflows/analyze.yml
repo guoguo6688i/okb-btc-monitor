@@ -10,4 +10,4 @@ jobs:
         with:
           python-version: '3.10'
       - run: pip install requests numpy
-      - run: python analyze_okb.py
+      - run: python scan4h.py
