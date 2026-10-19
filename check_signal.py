@@ -165,6 +165,52 @@ def build_signal_email(prev_action, prev_score, action, total, factors, okb_pric
     return subject, "\n".join(lines)
 
 
+
+
+def build_daily_email(action, total, position, factors, okb_price, btc_price, prev_signal):
+    """构建每日状态报告邮件。"""
+    is_buy = "买入" in action
+    is_sell = "卖出" in action or "减仓" in action
+    if is_buy:
+        emoji = "🟢"
+    elif is_sell:
+        emoji = "🔴"
+    else:
+        emoji = "🟡"
+
+    subject = f"{emoji} OKB/BTC每日报告: {action}({total:.1f}分)"
+
+    if prev_signal:
+        prev_line = f"上次信号: {prev_signal.get('action','?')} ({prev_signal.get('score',0):.1f}分)"
+    else:
+        prev_line = "首次运行"
+
+    lines = [
+        f"OKB/BTC 五因子每日状态报告",
+        f"{'='*40}",
+        f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"{prev_line}",
+        f"",
+        f"当前信号: {action} ({total:.1f}分)",
+        f"仓位建议: {position}",
+        f"",
+        f"当前行情:",
+        f"  OKB/BTC: {okb_price:.6f}  (≈ ${okb_price*btc_price:.2f})",
+        f"  BTC/USDT: ${btc_price:,.0f}",
+        f"",
+        f"五因子详情:",
+        f"  估值(30%): {factors['valuation']['score']:.1f}分 - {factors['valuation']['desc']}",
+        f"  事件(25%): {factors['event']['score']:.1f}分 - {factors['event']['desc']}",
+        f"  技术(20%): {factors['technical']['score']:.1f}分 - {factors['technical']['desc']}",
+        f"  趋势(15%): {factors['trend']['score']:.1f}分 - {factors['trend']['desc']}",
+        f"  情绪(10%): {factors['sentiment']['score']:.1f}分 - {factors['sentiment']['desc']}",
+        f"",
+        f"{'='*40}",
+        f"本邮件由 OKB/BTC 信号监控脚本自动发送（每日中午12点）",
+        f"仅供研究参考，不构成投资建议",
+    ]
+    return subject, "\n".join(lines)
+
 # ============================================================
 # 技术指标
 # ============================================================
@@ -429,6 +475,15 @@ def main():
                     action, total, factors, last["close"], btc_price
                 )
                 send_email(subject, body)
+
+    # 每日状态报告（无论信号是否变化都发送）
+    daily_report = os.environ.get("DAILY_REPORT", "false").lower() == "true"
+    if daily_report and EMAIL_CONFIG.get("enabled"):
+        print("  正在发送每日状态报告邮件...")
+        d_subject, d_body = build_daily_email(
+            action, total, position, factors, last["close"], btc_price, prev_signal
+        )
+        send_email(d_subject, d_body)
 
     # 输出
     print("-" * 55)
