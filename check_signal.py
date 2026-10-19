@@ -456,8 +456,13 @@ def main():
                 prev_signal = json.load(f)
         except Exception:
             pass
+    from datetime import timezone as _tz
+    today_utc = datetime.now(_tz.utc).strftime("%Y-%m-%d")
+    state_data = {"action": action, "score": total, "time": datetime.now().isoformat()}
+    if prev_signal and prev_signal.get("last_daily_date"):
+        state_data["last_daily_date"] = prev_signal["last_daily_date"]
     with open(signal_file, "w") as f:
-        json.dump({"action": action, "score": total, "time": datetime.now().isoformat()}, f)
+        json.dump(state_data, f)
 
     if prev_signal and prev_signal.get("action") != action:
         is_buy = "买入" in action
@@ -476,15 +481,20 @@ def main():
                 )
                 send_email(subject, body)
 
-    # 每日状态报告：在 UTC 4 点（北京时间12点）的运行中发送
-    from datetime import timezone as _tz
-    daily_report = datetime.now(_tz.utc).hour == 4
+    # 每日状态报告：UTC 4点（北京时间12点）后首次运行时发送，每天只发一次
+    now_utc = datetime.now(_tz.utc)
+    already_sent_today = state_data.get("last_daily_date") == today_utc
+    daily_report = (now_utc.hour >= 4) and not already_sent_today
     if daily_report and EMAIL_CONFIG.get("enabled"):
         print("  正在发送每日状态报告邮件...")
         d_subject, d_body = build_daily_email(
             action, total, position, factors, last["close"], btc_price, prev_signal
         )
-        send_email(d_subject, d_body)
+        ok = send_email(d_subject, d_body)
+        if ok:
+            state_data["last_daily_date"] = today_utc
+            with open(signal_file, "w") as f:
+                json.dump(state_data, f)
 
     # 输出
     print("-" * 55)
