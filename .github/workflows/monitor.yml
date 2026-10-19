@@ -24,7 +24,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .okb_last_signal.json
-          key: okb-signal-state-v1
+          key: okb-signal-state-${{ github.run_id }}
+          restore-keys: |
+            okb-signal-state-
 
       - name: Install dependencies
         run: |
