@@ -3,7 +3,6 @@ name: OKB/BTC Signal Monitor
 on:
   schedule:
     - cron: '0 */4 * * *'  # 每4小时运行一次（UTC 0,4,8,12,16,20点）
-    - cron: '3 4 * * *'  # 备用：确保UTC 4点（北京时间12点）一定运行以发送每日报告
   workflow_dispatch:  # 支持手动触发
 
 env:
